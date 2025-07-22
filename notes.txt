@@ -1,0 +1,51 @@
+
+data.py 
+
+used single id for movie_id so this works with an api 
+## would use async client in prod 
+## used IMDV reviews because small enough dataset for me in the free tier, 
+consider using better dataset
+it also has sentiment tags that we can use a ground truth for testing (assumptions)
+
+
+currently a better title --> id lookup should be impleneted, current one is very strict and doesnt work well with the agent
+that would be the first step to improve this agentic framework 
+the current lookup tool is pretty limited 
+
+pyproject.toml 
+needs dev dependancies (linter, mypy etc.. to ensure best practicies for developers before committing)
+ideally this would match your CICD linter and tester 
+
+
+# CICD deployment 
+general linters in CICD pipeline 
+must have mock tests that run for each module in CICD too 
+
+
+##agentic framework 
+used google adk because it is well integrated with google GCP , it is also modular and pretty clean to use and deploy into GCP 
+refer to this article for more info 
+https://medium.com/@sahin.samia/the-ultimate-guide-to-agentic-ai-python-libraries-in-2025-1a964a9de8f0
+
+and here for documentation 
+https://google.github.io/adk-docs/tutorials/agent-team/#step-1-your-first-agent-basic-weather-lookup
+
+
+## config.py 
+
+Would be a three way setup, would either pull in a the setup, can be a try except or just an env var setup to pick which place to pull secrets from  
+- Production secret (try)
+- CICD GIT secrets 
+- local vars.env file 
+
+get_session
+This is the most simplified version for testing 
+for production you would need to setup 
+Currently getting user_id and sessions-id as hardcoded variables from vars. in prod would just be something you'd get in the request from the frontend 
+
+This adk actualy provides using memory and session services using Vertex AI in GCP 
+Vertex AI Express Mode: Using Vertex AI Sessions and Memory for Free
+https://google.github.io/adk-docs/sessions/express-mode/
+
+would need to add a general logging thing that would work with async systems (normal logging with ContextVars)
+

@@ -1,0 +1,99 @@
+-- Stats on review length, label distribution, and reviewer ratings
+WITH movies AS (
+  SELECT DISTINCT movie_id 
+  FROM `bigquery-public-data.imdb.reviews` 
+  WHERE RAND() < 0.2 
+  LIMIT 100
+),
+all_sampled_info AS (
+  SELECT *
+  FROM `bigquery-public-data.imdb.reviews`
+  JOIN movies USING(movie_id)
+  WHERE label IN ('Positive', 'Negative')
+),
+review_stats AS (
+  SELECT
+    MIN(LENGTH(review)) AS min_length,
+    MAX(LENGTH(review)) AS max_length,
+    AVG(LENGTH(review)) AS avg_length,
+    APPROX_QUANTILES(LENGTH(review), 100)[OFFSET(50)] AS median_length
+  FROM all_sampled_info
+),
+label_distribution AS (
+  SELECT 
+    label,
+    COUNT(*) AS count,
+    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() AS percent
+  FROM all_sampled_info
+  GROUP BY label
+),
+rating_distribution AS (
+  SELECT 
+    CAST(reviewer_rating AS INT64) AS rating,
+    COUNT(*) AS count,
+    COUNT(*) * 100.0 / SUM(COUNT(*)) OVER() AS percent
+  FROM all_sampled_info
+  GROUP BY rating
+),
+review_lengths AS (
+  SELECT 
+    movie_id,
+    SUM(LENGTH(review)) AS total_review_length
+  FROM `bigquery-public-data.imdb.reviews`
+  GROUP BY movie_id
+), 
+label_distribution_by_movie as 
+(
+  SELECT
+  MIN(total_review_length) AS min_total_length,
+  MAX(total_review_length) AS max_total_length,
+  AVG(total_review_length) AS avg_total_length,
+  APPROX_QUANTILES(total_review_length, 100)[OFFSET(50)] AS median_total_length, 
+  MIN(review_number) as min_review_number , 
+  MAX(review_number) as max_review_number, 
+  AVG(review_number) as avg_review_number 
+)
+
+-- Final SELECT to show all together (can also run individually)
+--SELECT * FROM review_stats;
+
+--SELECT * FROM label_distribution;
+
+--SELECT * FROM rating_distribution ORDER BY rating;
+
+SELECT * from label_distribution_by_movie; 
+
+
+results 
+
+stats by single review 
+Row	min_length	max_length	avg_length	median_length
+1	166	5983	1250.8614097968946	940
+
+that means that average review is around 200-250
+
+stats by total reviews for each movie 
+min_total_length	max_total_length	avg_total_length	median_total_length	min_review_number	max_review_number	avg_review_number
+52	81735	9168.6246903093361	4739	1	30	7.0786437318609812
+
+This means that max chars for a review is around 81k which is at most 81k/3 < 30k tokens which means this is lower than any models context window 
+we are safe to go to just throw em all in there for summarization 
+
+we also have an average of 7 reviews per movie which would be a nice good summary use case 
+
+
+1	Negative	766	86.067415730337075
+2	Positive	124	13.932584269662922
+
+skewed to negative reviews which is interetesting to see, would mean a classifier would have to be evaluated and trained accordingly 
+This affects our evaluator agent 
+The review would number distribution confirms this: very left tailed skew of 40% 1/10 rating. 
+rating	count	percent
+1	334	39.018691588785046
+2	120	14.018691588785046
+3	140	16.355140186915889
+4	104	12.149532710280374
+7	40	4.6728971962616823
+8	35	4.0887850467289724
+9	31	3.6214953271028039
+10	52	6.0747663551401869
