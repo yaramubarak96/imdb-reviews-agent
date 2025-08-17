@@ -8,7 +8,7 @@ from reviews.app import call_agent_async
 async def run_agent_query(query: str, runner: Runner, user_id: str, session_id: str):
     print(f"\nQuery: {query}")
     print("-" * 50)
-    response = await call_agent_async(query, runner, user_id, session_id)
+    response, debug_log = await call_agent_async(query, runner, user_id, session_id)
     print("\nAgent's response:")
     print(response)
     print("=" * 50)

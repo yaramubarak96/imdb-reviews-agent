@@ -59,6 +59,14 @@ Run the application locally:
 python main.py
 ```
 
+### Run the Streamlit Application
+
+To run the interactive Streamlit application, execute the following command:
+
+```bash
+streamlit run streamlit_app.py
+```
+
 ## Testing
 
 Run all tests:

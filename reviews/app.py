@@ -1,5 +1,10 @@
 
-from google.genai import types # For creating message Content/Parts
+import asyncio
+from reviews.agents import root_agent
+from google.adk.runners import Runner
+from google.adk.sessions import InMemorySessionService
+from google.genai import types
+
 
 """
 FastAPI Application Setup for Movie Review Analysis Service
@@ -43,26 +48,27 @@ Main Routes:
 
 """
 
-async def call_agent_async(query: str, runner, user_id, session_id):
+async def call_agent_async(query: str, runner: Runner, user_id: str, session_id: str):
   """Sends a query to the agent and prints the final response."""
   # Prepare the user's message in ADK format
   content = types.Content(role='user', parts=[types.Part(text=query)])
 
   final_response_text = "Agent did not produce a final response." # Default
+  debug_events = [] # List to store debug event strings
 
   async for event in runner.run_async(user_id=user_id, session_id=session_id, new_message=content):
-      #this is for DEBUG LOGGING 
-      #print(f"  [Event] Author: {event.author}, Type: {type(event).__name__}, Final: {event.is_final_response()}, Content: {event.content}")
+      # Collect debug info instead of printing
+      event_info = f"[Event] Author: {event.author}, Type: {type(event).__name__}, Final: {event.is_final_response()}, Content: {event.content}"
+      debug_events.append(event_info)
 
       if event.is_final_response():
           if event.content and event.content.parts:
              final_response_text = event.content.parts[0].text
           elif event.actions and event.actions.escalate: # Handle potential errors/escalations
              final_response_text = f"Agent escalated: {event.error_message or 'No specific message.'}"
-          # Add more checks here if needed (e.g., specific error codes)
           break # Stop processing events once the final response is found
 
-  return final_response_text
+  return final_response_text, debug_events
 
 
  
